@@ -9,5 +9,6 @@ export { toHexString } from './uint8array/toHexString';
 export { hash } from './hash/hash';
 export { hashString } from './hash/hashString';
 export { compareVersions } from './version/compare';
+export type { TCompareOperator } from './version/compare';
 export { castType } from './common/castType';
 export { tokenizeCommand, tokenizeTargetSelector } from './command/tokenize';
