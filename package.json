@@ -1,0 +1,32 @@
+{
+	"name": "bridge-common-utils",
+	"version": "0.1.0",
+	"description": "",
+	"scripts": {
+		"build:types": "tsc --project tsconfig.json",
+		"build:only": "vite build",
+		"build": "vite build && npm run build:types"
+	},
+	"main": "./dist/common-utils.umd.js",
+	"module": "./dist/common-utils.es.js",
+	"types": "./dist/main.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/common-utils.es.js",
+			"require": "./dist/common-utils.umd.js"
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/bridge-core/common-utils.git"
+	},
+	"bugs": {
+		"url": "https://github.com/bridge-core/common-utils/issues"
+	},
+	"homepage": "https://github.com/bridge-core/common-utils#readme",
+	"author": "solvedDev",
+	"license": "MIT",
+	"devDependencies": {
+		"vite": "^2.7.3"
+	}
+}
