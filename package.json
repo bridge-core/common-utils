@@ -1,6 +1,6 @@
 {
 	"name": "bridge-common-utils",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"description": "",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",

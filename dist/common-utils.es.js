@@ -2016,4 +2016,148 @@ const assertValidOperator = (op) => {
     throw new Error(`Invalid operator, expected one of ${allowedOperators.join("|")}`);
   }
 };
-export { compare as compareVersions, deepMerge, deepMergeAll, get, hasAnyPath, hash, hashString, isMatch, setObjectAt, toHexString, walkObject };
+function castType(value) {
+  if (value === "true") {
+    return true;
+  } else if (value === "false") {
+    return false;
+  } else if (value === "null") {
+    return null;
+  } else if (value === "undefined") {
+    return void 0;
+  } else if (isNumeric(value)) {
+    return Number(value);
+  } else if (typeof value === "string") {
+    if (value.startsWith('"') && value.endsWith('"'))
+      return value.slice(1, -1);
+    return value;
+  } else {
+    return value;
+  }
+}
+function isNumeric(value) {
+  return !isNaN(Number(value));
+}
+function tokenizeCommand(command) {
+  let curlyBrackets = 0;
+  let squareBrackets = 0;
+  let inQuotes = false;
+  let i = 0;
+  let wordStart = 0;
+  let word = "";
+  let tokens = [];
+  while (i < command.length) {
+    if (command[i] === "^" && word[0] === "^" || command[i] === "~" && word[0] === "~") {
+      tokens.push({
+        startColumn: wordStart,
+        endColumn: i,
+        word
+      });
+      wordStart = i + 1;
+      word = command[i];
+    } else if (command[i] === '"') {
+      word += command[i];
+      if (inQuotes) {
+        tokens.push({
+          startColumn: wordStart,
+          endColumn: i,
+          word
+        });
+        wordStart = i + 1;
+        word = "";
+      }
+      inQuotes = !inQuotes;
+    } else if (command[i] === " " || command[i] === "	") {
+      if (inQuotes) {
+        word += command[i];
+        i++;
+        continue;
+      }
+      if (curlyBrackets === 0 && squareBrackets === 0 && word !== "") {
+        tokens.push({
+          startColumn: wordStart,
+          endColumn: i,
+          word
+        });
+        wordStart = i + 1;
+        word = "";
+      }
+    } else {
+      if (command[i] === "{") {
+        curlyBrackets++;
+      } else if (command[i] === "}") {
+        curlyBrackets--;
+      } else if (command[i] === "[") {
+        squareBrackets++;
+      } else if (command[i] === "]") {
+        squareBrackets--;
+      }
+      if (command[i].trim() !== "")
+        word += command[i];
+    }
+    i++;
+  }
+  tokens.push({
+    startColumn: wordStart,
+    endColumn: i,
+    word
+  });
+  return { tokens };
+}
+function tokenizeTargetSelector(targetSelector, wordOffset = 0) {
+  let i = 0;
+  let wordStart = 0;
+  let word = "";
+  let tokens = [];
+  while (i < targetSelector.length) {
+    if (targetSelector[i] === "=") {
+      tokens.push({
+        startColumn: wordStart + wordOffset,
+        endColumn: i + wordOffset,
+        word
+      });
+      wordStart = i + 1;
+      word = "";
+      if (targetSelector[i + 1] === "!") {
+        tokens.push({
+          startColumn: i + wordOffset,
+          endColumn: wordStart + wordOffset + 1,
+          word: "=!"
+        });
+        i++;
+        wordStart++;
+      } else {
+        tokens.push({
+          startColumn: i + wordOffset,
+          endColumn: wordStart + wordOffset,
+          word: "="
+        });
+      }
+    } else if (targetSelector[i] === ",") {
+      tokens.push({
+        startColumn: wordStart + wordOffset,
+        endColumn: i + wordOffset,
+        word
+      });
+      wordStart = i + 1;
+      word = "";
+      tokens.push({
+        startColumn: i + wordOffset,
+        endColumn: wordStart + wordOffset,
+        word: ","
+      });
+    } else {
+      if (targetSelector[i].trim() === "" && wordStart === i)
+        wordStart++;
+      word += targetSelector[i].trim();
+    }
+    i++;
+  }
+  tokens.push({
+    startColumn: wordStart + wordOffset,
+    endColumn: i + wordOffset,
+    word
+  });
+  return { tokens };
+}
+export { castType, compare as compareVersions, deepMerge, deepMergeAll, get, hasAnyPath, hash, hashString, isMatch, setObjectAt, toHexString, tokenizeCommand, tokenizeTargetSelector, walkObject };
