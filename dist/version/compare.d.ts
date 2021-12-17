@@ -1,1 +1,1 @@
-export { compare as compareVersions } from 'compare-versions';
+export { compare as compareVersions, CompareOperator as TCompareOperator, } from 'compare-versions';
