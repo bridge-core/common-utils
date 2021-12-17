@@ -1891,4 +1891,129 @@ function hasAnyPath(obj, paths) {
   }
   return false;
 }
-export { hasAnyPath, isMatch, setObjectAt, walkObject };
+function deepMerge(obj1, obj2) {
+  if (Array.isArray(obj1) && Array.isArray(obj2))
+    return obj1.concat(obj2);
+  else if (Array.isArray(obj1))
+    return obj1.concat([obj2]);
+  else if (Array.isArray(obj2))
+    return obj2.concat([obj1]);
+  else if (typeof obj2 !== "object")
+    return obj2;
+  let res = {};
+  for (const key in obj1) {
+    if (obj2[key] === void 0)
+      res[key] = obj1[key];
+    else
+      res[key] = deepMerge(obj1[key], obj2[key]);
+  }
+  for (const key in obj2) {
+    if (obj1[key] === void 0)
+      res[key] = obj2[key];
+  }
+  return res;
+}
+function deepMergeAll(objs) {
+  let current = objs[0];
+  for (let i = 1; i < objs.length; i++)
+    current = deepMerge(current, objs[i]);
+  return current;
+}
+function get(obj, path2, defaultValue) {
+  if (path2.length === 0)
+    return obj;
+  let current = obj;
+  for (let i = 0; i < path2.length; i++) {
+    if (current === void 0)
+      return defaultValue;
+    current = current[path2[i]];
+  }
+  return current;
+}
+function toHexString(data) {
+  return Array.from(data).map((b) => ("00" + b.toString(16)).slice(-2)).join("");
+}
+async function hash(data) {
+  return new Uint8Array(await crypto.subtle.digest("sha-1", data));
+}
+const textEncoder = new TextEncoder();
+async function hashString(str) {
+  const rawData = textEncoder.encode(str);
+  if (!rawData)
+    return "";
+  const hashedData = await hash(rawData);
+  return toHexString(hashedData);
+}
+function compareVersions(v1, v2) {
+  const n1 = validateAndParse(v1);
+  const n2 = validateAndParse(v2);
+  const p1 = n1.pop();
+  const p2 = n2.pop();
+  const r = compareSegments(n1, n2);
+  if (r !== 0)
+    return r;
+  if (p1 && p2) {
+    return compareSegments(p1.split("."), p2.split("."));
+  } else if (p1 || p2) {
+    return p1 ? -1 : 1;
+  }
+  return 0;
+}
+const compare = (v1, v2, operator) => {
+  assertValidOperator(operator);
+  const res = compareVersions(v1, v2);
+  return operatorResMap[operator].includes(res);
+};
+const semver = /^[v^~<>=]*?(\d+)(?:\.([x*]|\d+)(?:\.([x*]|\d+)(?:\.([x*]|\d+))?(?:-([\da-z\-]+(?:\.[\da-z\-]+)*))?(?:\+[\da-z\-]+(?:\.[\da-z\-]+)*)?)?)?$/i;
+const validateAndParse = (v) => {
+  if (typeof v !== "string") {
+    throw new TypeError("Invalid argument expected string");
+  }
+  const match = v.match(semver);
+  if (!match) {
+    throw new Error(`Invalid argument not valid semver ('${v}' received)`);
+  }
+  match.shift();
+  return match;
+};
+const isWildcard = (s) => s === "*" || s === "x" || s === "X";
+const tryParse = (v) => {
+  const n = parseInt(v, 10);
+  return isNaN(n) ? v : n;
+};
+const forceType = (a, b) => typeof a !== typeof b ? [String(a), String(b)] : [a, b];
+const compareStrings = (a, b) => {
+  if (isWildcard(a) || isWildcard(b))
+    return 0;
+  const [ap, bp] = forceType(tryParse(a), tryParse(b));
+  if (ap > bp)
+    return 1;
+  if (ap < bp)
+    return -1;
+  return 0;
+};
+const compareSegments = (a, b) => {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const r = compareStrings(a[i] || 0, b[i] || 0);
+    if (r !== 0)
+      return r;
+  }
+  return 0;
+};
+const operatorResMap = {
+  ">": [1],
+  ">=": [0, 1],
+  "=": [0],
+  "<=": [-1, 0],
+  "<": [-1]
+};
+const allowedOperators = Object.keys(operatorResMap);
+const assertValidOperator = (op) => {
+  if (typeof op !== "string") {
+    throw new TypeError(`Invalid operator type, expected string but got ${typeof op}`);
+  }
+  if (allowedOperators.indexOf(op) === -1) {
+    throw new Error(`Invalid operator, expected one of ${allowedOperators.join("|")}`);
+  }
+};
+export { compare as compareVersions, deepMerge, deepMergeAll, get, hasAnyPath, hash, hashString, isMatch, setObjectAt, toHexString, walkObject };

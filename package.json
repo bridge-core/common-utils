@@ -1,6 +1,6 @@
 {
 	"name": "bridge-common-utils",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",
@@ -28,5 +28,8 @@
 	"license": "MIT",
 	"devDependencies": {
 		"vite": "^2.7.3"
+	},
+	"dependencies": {
+		"compare-versions": "^4.1.2"
 	}
 }
